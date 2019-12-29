@@ -1,0 +1,19 @@
+{
+  "name": "morrycrhismas",
+  "version": "1.0.0",
+  "description": "morry crismas",
+  "main": "index.js",
+  "scripts": {
+    "start": "parcel",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "camera-controls": "^1.17.0",
+    "three": "^0.112.0"
+  },
+  "devDependencies": {
+    "parcel": "^1.12.4"
+  }
+}

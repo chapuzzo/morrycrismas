@@ -20,36 +20,44 @@ const tree  = (width, height, segments = 3) => {
   const geometry = new Geometry()
   const radius = width/2
 
-  const ratio = radius / height
+  const coneHeight = height * .8
+  const logHeight = height * .2
+  const ratio = radius / coneHeight
 
-  const segmentHeight = height / segments
+  const segmentHeight = coneHeight / segments
   const segmentWidth = segment => segmentHeight * (segment + 1) * ratio
 
   const material = new MeshPhongMaterial({ color: 'green' })
 
   Array(segments).fill().forEach((_,idx) => {
     const radius = segmentWidth(idx)
-    const height = segmentHeight
     const base = idx > 0 ? radius / (segments + 1) * idx : 0
 
-    const segment = new CylinderGeometry( base, radius, height, 160 )
+    const segment = new CylinderGeometry( base, radius, segmentHeight, 160 )
 
-    segment.translate( 0, -height * idx, 0 )
+    segment.translate( 0, -segmentHeight * idx, 0 )
     geometry.merge(segment)
   })
 
-  const tree = new Mesh(geometry, material)
-  tree.position.set(0, segmentHeight * (segments - .5), 0)
+  const cone = new Mesh(geometry, material)
+  cone.position.set(0, segmentHeight * (segments - .5) + logHeight, 0)
 
-  const shapeGeometry = new CylinderGeometry(0, radius, height, 160)
 
+  const logGeometry = new CylinderGeometry(width/6, width/6, logHeight, 160)
+  const logMaterial = new MeshPhongMaterial({ color: 'brown' })
+  const log = new Mesh(logGeometry, logMaterial)
+  log.position.set(0, logHeight / 2, 0)
+
+
+  // const shapeGeometry = new CylinderGeometry(0, radius, height, 160)
   // const wrapperMaterial = new MeshPhongMaterial({ color: 'white', transparent: true, opacity: 0.5})
   // const wrapper = new Mesh(shapeGeometry, wrapperMaterial)
   // wrapper.position.set(0, segmentHeight * (segments/2), 0)
 
   const group = new THREE.Group()
   // group.add(wrapper)
-  group.add(tree)
+  group.add(cone)
+  group.add(log)
 
   return group
 }

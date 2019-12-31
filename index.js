@@ -89,7 +89,7 @@ const setup = () => {
   directionalLight.position.set(600, 200, 200)
 
   var planeGeometry = new THREE.PlaneGeometry( gridSize * 2.5, gridSize * 2.5 )
-  var planeMaterial = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.5} )
+  var planeMaterial = new THREE.MeshPhongMaterial( {color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.5} )
   var plane = new THREE.Mesh( planeGeometry, planeMaterial )
   plane.lookAt(0, 1, 0)
 

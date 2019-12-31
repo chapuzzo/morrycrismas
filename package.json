@@ -4,8 +4,8 @@
   "description": "morry crismas",
   "main": "index.js",
   "scripts": {
-    "start": "parcel index.html",
-    "build": "parcel build --public-url ./ index.html",
+    "start": "parcel -d dev index.html",
+    "build": "parcel build --public-url ./ -d docs index.html",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

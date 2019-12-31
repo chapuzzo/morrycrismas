@@ -83,7 +83,7 @@ const setup = () => {
     scene.add(cube)
   })
 
-
+  const hemisphereLight = new THREE.HemisphereLight( 0xff11bb, 0x08ff20, 1 )
 
   const directionalLight = new DirectionalLight(0xffffff, 0.5)
   directionalLight.position.set(600, 200, 200)
@@ -96,6 +96,7 @@ const setup = () => {
   scene.add( plane )
   scene.add( ambientLight )
   scene.add( directionalLight )
+  scene.add( hemisphereLight )
 
   const animate = () => {
     cameraControls.update(clock.getDelta())

@@ -4,10 +4,14 @@ import {
   CylinderGeometry,
   DirectionalLight,
   Geometry,
+  Group,
   MeshPhongMaterial,
   Mesh,
   PerspectiveCamera,
+  PlaneGeometry,
+  PointLight,
   Scene,
+  Vector3,
   WebGLRenderer
 } from 'three'
 import * as THREE from 'three'
@@ -43,11 +47,9 @@ const tree  = (materials, width, height, segments = 3) => {
   const cone = new Mesh(geometry, materials.cone)
   cone.position.set(0, segmentHeight * (segments - .5) + logHeight, 0)
 
-
   const logGeometry = new CylinderGeometry(width / 6, width / 6, logHeight, 160)
   const log = new Mesh(logGeometry, materials.log)
   log.position.set(0, logHeight / 2, 0)
-
 
   // const shapeGeometry = new CylinderGeometry(0, radius, height, 160)
   // const wrapperMaterial = new MeshPhongMaterial({ color: 'white', transparent: true, opacity: 0.5})
@@ -56,6 +58,9 @@ const tree  = (materials, width, height, segments = 3) => {
 
   const group = new THREE.Group()
   // group.add(wrapper)
+  receiveShadow(cone)
+  receiveShadow(log)
+
   group.add(cone)
   group.add(log)
 
@@ -64,29 +69,71 @@ const tree  = (materials, width, height, segments = 3) => {
 
 const rand = (min = 0, max = 500) => Math.round(Math.random() * (max - min) + min)
 
+const castShadow = light => {
+  // return
+  light.castShadow = true
+//   light.shadow.camera.near = 0.5
+//   light.shadow.camera.far = 1000
+  // light.shadow.mapSize.width = 2048
+  // light.shadow.mapSize.height = 2048
+}
+
+const receiveShadow = element => {
+  element.receiveShadow = true
+  element.castShadow = true
+}
+
 const setup = () => {
   const container = document.querySelector('body')
 
 	const scene = new Scene()
+  const center = new Vector3(0, 1, 0)
 
   const renderer = new WebGLRenderer()
   container.append(renderer.domElement)
-  renderer.setPixelRatio(window.devicePixelRatio)
-  renderer.setSize(window.innerWidth, window.innerHeight)
 
-  const ambientLight = new AmbientLight('white', 0.5)
+  renderer.setPixelRatio(window.devicePixelRatio)
+  renderer.setSize(container.clientWidth, container.clientHeight)
+  renderer.shadowMap.enabled = true
+  renderer.shadowMap.type = THREE.PFCShadowMap
 
   const camera = new PerspectiveCamera(70, container.clientWidth / container.clientHeight, 1, 10000)
-  camera.position.set( 400, 400, 400)
+  camera.position.set(400, 400, 400)
 
   const clock = new Clock()
   const cameraControls = new CameraControls(camera, renderer.domElement)
+
+  const ambientLight = new AmbientLight('white', .5)
+  const hemisphereLight = new THREE.HemisphereLight(0x999999, 0x081620, 1)
+
+  const directionalLight = new DirectionalLight(0xffffff, 0.3)
+  const directionalHelper = new THREE.DirectionalLightHelper(directionalLight)
+  directionalLight.position.set(100, 100, 200)
+  castShadow(directionalLight)
+
+  const firstLight = new PointLight(0xffffff, 0.3)
+  const mainHelper = new THREE.PointLightHelper(firstLight)
+  firstLight.position.set(100, 100, 200)
+  castShadow(firstLight)
+
+  const secondLight = new PointLight(0xffffaa, 0.5)
+  const secondHelper = new THREE.PointLightHelper(secondLight)
+  secondLight.position.set(-300, 300, 500)
+  castShadow(secondLight)
+
+  const gridSize = 300
+
+  const planeGeometry = new THREE.PlaneGeometry(gridSize * 2.5, gridSize * 2.5)
+  const planeMaterial = new MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 })
+  const plane = new THREE.Mesh(planeGeometry, planeMaterial)
+  plane.lookAt(center)
+  receiveShadow(plane)
 
   const materials = {
     cone: new MeshPhongMaterial({ color: 'green' }),
     log: new MeshPhongMaterial({ color: 'maroon' })
   }
-  const gridSize = 300
+
   Array(30).fill().forEach((_, idx) => {
     const height = rand(50, 200)
     const cube = tree(materials, height / rand(2,4), height, rand(2, 6))
@@ -95,24 +142,26 @@ const setup = () => {
     scene.add(cube)
   })
 
-  const hemisphereLight = new THREE.HemisphereLight( 0xff11bb, 0x08ff20, 1 )
+  scene.add(ambientLight)
+  scene.add(hemisphereLight)
+  scene.add(directionalLight)
+  scene.add(directionalHelper)
+  scene.add(plane)
 
-  const directionalLight = new DirectionalLight(0xffffff, 0.5)
-  directionalLight.position.set(600, 200, 200)
+  const rotatingLights = new Group()
 
-  var planeGeometry = new THREE.PlaneGeometry( gridSize * 2.5, gridSize * 2.5 )
-  var planeMaterial = new THREE.MeshPhongMaterial( {color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.5} )
-  var plane = new THREE.Mesh( planeGeometry, planeMaterial )
-  plane.lookAt(0, 1, 0)
+  rotatingLights.add(firstLight)
+  rotatingLights.add(secondLight)
 
-  scene.add( plane )
-  scene.add( ambientLight )
-  scene.add( directionalLight )
-  scene.add( hemisphereLight )
+  scene.add(mainHelper)
+  scene.add(secondHelper)
+
+  scene.add(rotatingLights)
 
   const animate = () => {
     cameraControls.update(clock.getDelta())
     renderer.render(scene, camera)
+    rotatingLights.rotation.y += 0.01
     stats.update()
 
     // cube.rotation.x += .01

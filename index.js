@@ -123,4 +123,4 @@ const setup = () => {
   animate()
 }
 
-setup()
+document.addEventListener('DOMContentLoaded', setup)

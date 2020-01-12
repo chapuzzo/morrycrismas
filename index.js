@@ -19,7 +19,7 @@ CameraControls.install({ THREE })
 const stats = new Stats()
 document.body.append(stats.domElement)
 
-const tree  = (width, height, segments = 3) => {
+const tree  = (materials, width, height, segments = 3) => {
   const geometry = new Geometry()
   const radius = width / 2
 
@@ -29,8 +29,6 @@ const tree  = (width, height, segments = 3) => {
 
   const segmentHeight = coneHeight / segments
   const segmentWidth = segment => segmentHeight * (segment + 1) * ratio
-
-  const material = new MeshPhongMaterial({ color: 'green' })
 
   Array(segments).fill().forEach((_,idx) => {
     const radius = segmentWidth(idx)
@@ -42,13 +40,12 @@ const tree  = (width, height, segments = 3) => {
     geometry.merge(segment)
   })
 
-  const cone = new Mesh(geometry, material)
+  const cone = new Mesh(geometry, materials.cone)
   cone.position.set(0, segmentHeight * (segments - .5) + logHeight, 0)
 
 
   const logGeometry = new CylinderGeometry(width / 6, width / 6, logHeight, 160)
-  const logMaterial = new MeshPhongMaterial({ color: 'brown' })
-  const log = new Mesh(logGeometry, logMaterial)
+  const log = new Mesh(logGeometry, materials.log)
   log.position.set(0, logHeight / 2, 0)
 
 
@@ -85,10 +82,14 @@ const setup = () => {
   const clock = new Clock()
   const cameraControls = new CameraControls(camera, renderer.domElement)
 
+  const materials = {
+    cone: new MeshPhongMaterial({ color: 'green' }),
+    log: new MeshPhongMaterial({ color: 'maroon' })
+  }
   const gridSize = 300
   Array(30).fill().forEach((_, idx) => {
     const height = rand(50, 200)
-    const cube = tree(height / rand(2,4), height, rand(2, 6))
+    const cube = tree(materials, height / rand(2,4), height, rand(2, 6))
     cube.position.set(rand(-gridSize, gridSize), 0, rand(-gridSize, gridSize))
 
     scene.add(cube)

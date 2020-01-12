@@ -11,10 +11,13 @@ import {
   WebGLRenderer
 } from 'three'
 import * as THREE from 'three'
+import Stats from 'three/examples/js/libs/stats.min'
 
 import CameraControls from 'camera-controls'
 
 CameraControls.install({ THREE })
+const stats = new Stats()
+document.body.append(stats.domElement)
 
 const tree  = (width, height, segments = 3) => {
   const geometry = new Geometry()
@@ -109,6 +112,7 @@ const setup = () => {
   const animate = () => {
     cameraControls.update(clock.getDelta())
     renderer.render(scene, camera)
+    stats.update()
 
     // cube.rotation.x += .01
     // cube.rotation.y += .01

@@ -21,7 +21,7 @@ document.body.append(stats.domElement)
 
 const tree  = (width, height, segments = 3) => {
   const geometry = new Geometry()
-  const radius = width/2
+  const radius = width / 2
 
   const coneHeight = height * .8
   const logHeight = height * .2
@@ -36,9 +36,9 @@ const tree  = (width, height, segments = 3) => {
     const radius = segmentWidth(idx)
     const base = idx > 0 ? radius / (segments + 1) * idx : 0
 
-    const segment = new CylinderGeometry( base, radius, segmentHeight, 160 )
+    const segment = new CylinderGeometry(base, radius, segmentHeight, 160)
 
-    segment.translate( 0, -segmentHeight * idx, 0 )
+    segment.translate(0, -segmentHeight * idx, 0)
     geometry.merge(segment)
   })
 
@@ -46,7 +46,7 @@ const tree  = (width, height, segments = 3) => {
   cone.position.set(0, segmentHeight * (segments - .5) + logHeight, 0)
 
 
-  const logGeometry = new CylinderGeometry(width/6, width/6, logHeight, 160)
+  const logGeometry = new CylinderGeometry(width / 6, width / 6, logHeight, 160)
   const logMaterial = new MeshPhongMaterial({ color: 'brown' })
   const log = new Mesh(logGeometry, logMaterial)
   log.position.set(0, logHeight / 2, 0)

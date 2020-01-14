@@ -8,7 +8,7 @@ import {
   MeshPhongMaterial,
   Mesh,
   PerspectiveCamera,
-  PlaneGeometry,
+  CircleGeometry,
   PointLight,
   Scene,
   Vector3,
@@ -74,9 +74,32 @@ const castShadow = light => {
   light.castShadow = true
 //   light.shadow.camera.near = 0.5
 //   light.shadow.camera.far = 1000
-  // light.shadow.mapSize.width = 2048
-  // light.shadow.mapSize.height = 2048
+//   light.shadow.mapSize.width = 2048
+//   light.shadow.mapSize.height = 2048
 }
+
+const halfRand = () => Math.random() - .5
+
+const getPoint = (range) => {
+  const u = Math.random()
+  let x1 = halfRand()
+  let x2 = halfRand()
+  let x3 = halfRand()
+
+  const mag = Math.sqrt(x1 ** 2 + x2 ** 2 + x3 ** 2)
+  x1 /= mag
+  x2 /= mag
+  x3 /= mag
+
+  const c = Math.cbrt(u) * range
+
+  return {
+    x: x1 * c,
+    y: x2 * c,
+    z: x3 * c
+  }
+}
+console.log(getPoint)
 
 const receiveShadow = element => {
   element.receiveShadow = true
@@ -86,8 +109,9 @@ const receiveShadow = element => {
 const setup = () => {
   const container = document.querySelector('body')
 
-	const scene = new Scene()
   const center = new Vector3(0, 1, 0)
+  const scene = new Scene()
+  // scene.fog = new THREE.FogExp2( 0x000104, 0.000675 )
 
   const renderer = new WebGLRenderer()
   container.append(renderer.domElement)
@@ -95,7 +119,7 @@ const setup = () => {
   renderer.setPixelRatio(window.devicePixelRatio)
   renderer.setSize(container.clientWidth, container.clientHeight)
   renderer.shadowMap.enabled = true
-  renderer.shadowMap.type = THREE.PFCShadowMap
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
   const camera = new PerspectiveCamera(70, container.clientWidth / container.clientHeight, 1, 10000)
   camera.position.set(400, 400, 400)
@@ -122,12 +146,26 @@ const setup = () => {
   castShadow(secondLight)
 
   const gridSize = 300
+  const base = gridSize * 1.5
+  const distance = 200
 
-  const planeGeometry = new THREE.PlaneGeometry(gridSize * 2.5, gridSize * 2.5)
+  // h^2 + a^2 = 2rh
+  // a^2 = 2rh - h^2
+  // a sqrt(2rh - h^2)
+
+  const radius = Math.sqrt(2 * base * (base-distance) - (base - distance) ** 2)
+  console.log({gridSize, base, distance, radius})
+
+  const planeGeometry = new CircleGeometry(radius, 60)
   const planeMaterial = new MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 })
   const plane = new THREE.Mesh(planeGeometry, planeMaterial)
   plane.lookAt(center)
   receiveShadow(plane)
+
+  // const sphereGeometry = new THREE.SphereGeometry(base, 120, 120)
+  // const sphere = new THREE.Mesh(sphereGeometry, planeMaterial)
+  // sphere.position.setY(distance)
+  // scene.add(sphere)
 
   const materials = {
     cone: new MeshPhongMaterial({ color: 'green' }),
@@ -145,8 +183,30 @@ const setup = () => {
   scene.add(ambientLight)
   scene.add(hemisphereLight)
   scene.add(directionalLight)
-  scene.add(directionalHelper)
+  // scene.add(directionalHelper)
   scene.add(plane)
+
+  const flakesGeometry = new THREE.Geometry()
+
+  for ( let i = 0; i < 3000; i ++ ) {
+    const position = new THREE.Vector3()
+
+    Object.assign(position, getPoint(base))
+
+    flakesGeometry.vertices.push(position)
+  }
+
+  const flakeMaterial = new THREE.PointsMaterial( {
+    // size: 4,
+    // blending: THREE.AdditiveBlending,
+    // depthTest: false,
+    transparent: true
+  } )
+
+  const snowFlakes = new THREE.Points( flakesGeometry, flakeMaterial )
+  snowFlakes.position.setY(distance)
+
+  scene.add(snowFlakes)
 
   const rotatingLights = new Group()
 

@@ -12,7 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "camera-controls": "^1.17.0",
-    "three": "^0.112.0"
+    "three": "^0.125.0"
   },
   "devDependencies": {
     "parcel": "^1.12.4"

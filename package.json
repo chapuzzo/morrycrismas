@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "camera-controls": "^1.17.0",
+    "shake.js": "^1.2.2",
     "three": "^0.112.0"
   },
   "devDependencies": {

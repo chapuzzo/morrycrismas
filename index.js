@@ -1,5 +1,7 @@
 import {
   AmbientLight,
+  BufferGeometry,
+  CircleGeometry,
   Clock,
   CylinderGeometry,
   DirectionalLight,
@@ -8,7 +10,6 @@ import {
   MeshPhongMaterial,
   Mesh,
   PerspectiveCamera,
-  CircleGeometry,
   PointLight,
   Scene,
   Vector3,
@@ -16,14 +17,17 @@ import {
 } from 'three'
 import * as THREE from 'three'
 import Stats from 'three/examples/js/libs/stats.min'
+import Shake from 'shake.js'
 
 import CameraControls from 'camera-controls'
 
-CameraControls.install({ THREE })
+new Shake().start()
+
+CameraControls.install({THREE})
 const stats = new Stats()
 document.body.append(stats.domElement)
 
-const tree  = (materials, width, height, segments = 3) => {
+const tree = (materials, width, height, segments = 3) => {
   const geometry = new Geometry()
   const radius = width / 2
 
@@ -34,7 +38,7 @@ const tree  = (materials, width, height, segments = 3) => {
   const segmentHeight = coneHeight / segments
   const segmentWidth = segment => segmentHeight * (segment + 1) * ratio
 
-  Array.from(Array(segments), (_,idx) => {
+  Array.from(Array(segments), (_, idx) => {
     const radius = segmentWidth(idx)
     const base = idx > 0 ? radius / (segments + 1) * idx : 0
 
@@ -94,9 +98,7 @@ const getPoint = (range) => {
   const c = Math.cbrt(u) * range
 
   return {
-    x: x1 * c,
-    y: x2 * c,
-    z: x3 * c
+    x: x1 * c, y: x2 * c, z: x3 * c
   }
 }
 
@@ -121,7 +123,7 @@ const setup = () => {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
   const camera = new PerspectiveCamera(70, container.clientWidth / container.clientHeight, 1, 10000)
-  camera.position.set(400, 400, 400)
+  camera.position.set(700, 200, 400)
 
   const clock = new Clock()
   const cameraControls = new CameraControls(camera, renderer.domElement)
@@ -134,15 +136,15 @@ const setup = () => {
   directionalLight.position.set(100, 100, 200)
   castShadow(directionalLight)
 
-  const firstLight = new PointLight(0xffffff, 0.3)
-  const mainHelper = new THREE.PointLightHelper(firstLight)
-  firstLight.position.set(100, 100, 200)
-  castShadow(firstLight)
+  // const firstLight = new PointLight(0xffffff, 0.3)
+  // const mainHelper = new THREE.PointLightHelper(firstLight)
+  // firstLight.position.set(100, 100, 200)
+  // castShadow(firstLight)
 
-  const secondLight = new PointLight(0xffffaa, 0.5)
-  const secondHelper = new THREE.PointLightHelper(secondLight)
-  secondLight.position.set(-300, 300, 500)
-  castShadow(secondLight)
+  // const secondLight = new PointLight(0xffffaa, 0.5)
+  // const secondHelper = new THREE.PointLightHelper(secondLight)
+  // secondLight.position.set(-300, 300, 500)
+  // castShadow(secondLight)
 
   const gridSize = 300
   const base = gridSize * 1.5
@@ -152,11 +154,13 @@ const setup = () => {
   // a^2 = 2rh - h^2
   // a sqrt(2rh - h^2)
 
-  const radius = Math.sqrt(2 * base * (base-distance) - (base - distance) ** 2)
-  console.log({gridSize, base, distance, radius})
+  // const radius = Math.sqrt(2 * base * (base - distance) - (base - distance) ** 2)
+  // console.log({gridSize, base, distance, radius})
 
-  const planeGeometry = new CircleGeometry(radius, 60)
-  const planeMaterial = new MeshPhongMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 })
+  const planeGeometry = new CircleGeometry(base, 60)
+  const planeMaterial = new MeshPhongMaterial({
+    color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.5
+  })
   const plane = new THREE.Mesh(planeGeometry, planeMaterial)
   plane.lookAt(center)
   receiveShadow(plane)
@@ -167,14 +171,13 @@ const setup = () => {
   // scene.add(sphere)
 
   const materials = {
-    cone: new MeshPhongMaterial({ color: 'green' }),
-    log: new MeshPhongMaterial({ color: 'maroon' })
+    cone: new MeshPhongMaterial({color: 'green'}), log: new MeshPhongMaterial({color: 'maroon'})
   }
 
-  Array.from(Array(30),(_, idx) => {
+  Array.from(Array(30), (_, idx) => {
     const height = rand(50, 200)
-    const cube = tree(materials, height / rand(2,4), height, rand(2, 6))
-    cube.position.set(rand(-gridSize, gridSize), 0, rand(-gridSize, gridSize))
+    const cube = tree(materials, height / rand(2, 4), height, rand(2, 6))
+    cube.position.set(rand(-gridSize + 10, gridSize - 10), 0, rand(-gridSize + 10, gridSize - 10))
 
     scene.add(cube)
   })
@@ -185,43 +188,46 @@ const setup = () => {
   // scene.add(directionalHelper)
   scene.add(plane)
 
-  const flakesGeometry = new THREE.Geometry()
 
-  for ( let i = 0; i < 3000; i ++ ) {
-    const position = new THREE.Vector3()
+  const points = []
 
-    Object.assign(position, getPoint(base))
+  for (let i = 0; i < 1000; i++) {
+    let coords = {...getPoint(base), y: -distance}
 
-    flakesGeometry.vertices.push(position)
+    points.push(...Object.values(coords))
   }
 
-  const flakeMaterial = new THREE.PointsMaterial( {
+  const flakesGeometry = new THREE.BufferGeometry()
+  flakesGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(points), 3))
+
+  const flakeMaterial = new THREE.PointsMaterial({
     // size: 4,
     // blending: THREE.AdditiveBlending,
     // depthTest: false,
     transparent: true
-  } )
+  })
 
-  const snowFlakes = new THREE.Points( flakesGeometry, flakeMaterial )
+  const snowFlakes = new THREE.Points(flakesGeometry, flakeMaterial)
+  Object.assign(window, {snowFlakes})
   snowFlakes.position.setY(distance)
 
   scene.add(snowFlakes)
 
-  const rotatingLights = new Group()
+  // const rotatingLights = new Group()
+  // rotatingLights.add(firstLight)
+  // rotatingLights.add(secondLight)
 
-  rotatingLights.add(firstLight)
-  rotatingLights.add(secondLight)
+  // scene.add(mainHelper)
+  // scene.add(secondHelper)
 
-  scene.add(mainHelper)
-  scene.add(secondHelper)
-
-  scene.add(rotatingLights)
+  // scene.add(rotatingLights)
 
   const animate = () => {
     cameraControls.update(clock.getDelta())
     renderer.render(scene, camera)
-    rotatingLights.rotation.y += 0.01
+    // rotatingLights.rotation.y += 0.01
     stats.update()
+    fall(1)
 
     // cube.rotation.x += .01
     // cube.rotation.y += .01
@@ -233,7 +239,47 @@ const setup = () => {
   window.addEventListener('resize', () => {
     camera.aspect = container.clientWidth / container.clientHeight
     camera.updateProjectionMatrix()
-    renderer.setSize( container.clientWidth, container.clientHeight )
+    renderer.setSize(container.clientWidth, container.clientHeight)
+  })
+
+  window.addEventListener('shake', () => {
+    shake()
+  })
+
+  const fall = (amount) => {
+    const position = snowFlakes.geometry.getAttribute('position')
+    for (let x = 0; x < position.count; x++) {
+      const current = position.getY(x)
+
+      if (current > -200) position.setY(x, current - amount)
+    }
+
+    position.needsUpdate = true
+    snowFlakes.geometry.computeBoundingSphere()
+    snowFlakes.geometry.computeBoundingBox()
+  }
+
+  const shuffle = () => {
+    const position = snowFlakes.geometry.getAttribute('position')
+    for (let x = 0; x < position.count; x++) {
+      const coords = getPoint(base)
+
+      if (coords.y < -200) continue
+
+      position.setXYZ(x, ...Object.values(coords))
+    }
+
+    position.needsUpdate = true
+    snowFlakes.geometry.computeBoundingSphere()
+    snowFlakes.geometry.computeBoundingBox()
+  }
+
+  const shake = (n = 100) => {
+    for (let i = 0; i < n; i++) setTimeout(shuffle, 30 * i)
+  }
+
+  Object.assign(window, {
+    fall, shake, shuffle
   })
 }
 

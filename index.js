@@ -34,7 +34,7 @@ const tree  = (materials, width, height, segments = 3) => {
   const segmentHeight = coneHeight / segments
   const segmentWidth = segment => segmentHeight * (segment + 1) * ratio
 
-  Array(segments).fill().forEach((_,idx) => {
+  Array.from(Array(segments), (_,idx) => {
     const radius = segmentWidth(idx)
     const base = idx > 0 ? radius / (segments + 1) * idx : 0
 
@@ -99,7 +99,6 @@ const getPoint = (range) => {
     z: x3 * c
   }
 }
-console.log(getPoint)
 
 const receiveShadow = element => {
   element.receiveShadow = true
@@ -172,7 +171,7 @@ const setup = () => {
     log: new MeshPhongMaterial({ color: 'maroon' })
   }
 
-  Array(30).fill().forEach((_, idx) => {
+  Array.from(Array(30),(_, idx) => {
     const height = rand(50, 200)
     const cube = tree(materials, height / rand(2,4), height, rand(2, 6))
     cube.position.set(rand(-gridSize, gridSize), 0, rand(-gridSize, gridSize))
@@ -227,9 +226,9 @@ const setup = () => {
     // cube.rotation.x += .01
     // cube.rotation.y += .01
     // cube.rotation.z += .01
-    requestAnimationFrame(animate)
   }
-  animate()
+
+  renderer.setAnimationLoop(animate)
 
   window.addEventListener('resize', () => {
     camera.aspect = container.clientWidth / container.clientHeight

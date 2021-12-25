@@ -378,8 +378,8 @@ const setup = () => {
     snowFlakes.geometry.computeBoundingBox()
   }
 
-  const shake = (n = 100) => {
-    for (let i = 0; i < n; i++) setTimeout(shuffle, 30 * i)
+  const shake = (n = 50) => {
+    for (let i = 0; i < n; i++) setTimeout(shuffle, 50 * i)
   }
 
   Object.assign(window, {

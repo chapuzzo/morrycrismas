@@ -1,31 +1,35 @@
+import * as THREE from 'three'
 import {
   AmbientLight,
-  BufferGeometry,
-  CircleGeometry,
   Clock,
   CylinderGeometry,
   DirectionalLight,
+  FontLoader,
   Geometry,
   Group,
-  MeshPhongMaterial,
   Mesh,
+  MeshPhongMaterial,
   PerspectiveCamera,
-  PointLight,
+  Raycaster,
   Scene,
+  TextGeometry,
   Vector3,
   WebGLRenderer
 } from 'three'
-import * as THREE from 'three'
-import Stats from 'three/examples/js/libs/stats.min'
+
+import font from 'three/examples/fonts/helvetiker_bold.typeface.json'
+// import Stats from 'three/examples/js/libs/stats.min'
 import Shake from 'shake.js'
 
 import CameraControls from 'camera-controls'
 
-new Shake().start()
+new Shake({
+  threshold: 8
+}).start()
 
 CameraControls.install({THREE})
-const stats = new Stats()
-document.body.append(stats.domElement)
+// const stats = new Stats()
+// document.body.append(stats.domElement)
 
 const tree = (materials, width, height, segments = 3) => {
   const geometry = new Geometry()
@@ -54,6 +58,12 @@ const tree = (materials, width, height, segments = 3) => {
   const logGeometry = new CylinderGeometry(width / 6, width / 6, logHeight, 160)
   const log = new Mesh(logGeometry, materials.log)
   log.position.set(0, logHeight / 2, 0)
+
+  cone.geometry.computeBoundingBox()
+  cone.geometry.computeFaceNormals()
+
+  log.geometry.computeBoundingBox()
+  log.geometry.computeFaceNormals()
 
   // const shapeGeometry = new CylinderGeometry(0, radius, height, 160)
   // const wrapperMaterial = new MeshPhongMaterial({ color: 'white', transparent: true, opacity: 0.5})
@@ -102,15 +112,40 @@ const getPoint = (range) => {
   }
 }
 
+const texts = {
+  c: 'Feliz Navidad',
+  v: 'Bon Nadal'
+}
+
 const receiveShadow = element => {
   element.receiveShadow = true
   element.castShadow = true
 }
 
+const addText = (text, color, hidden) => {
+  const loader = new FontLoader()
+  const loadedFont = loader.parse(font)
+  const geometry = new TextGeometry(text, {
+    font: loadedFont,
+    size: 40,
+    height: 4,
+    bevelEnabled: true,
+    bevelSize: 1,
+    bevelThickness: 2,
+    bevelSegments: 5
+  })
+
+  return new Mesh(geometry, new MeshPhongMaterial({
+    color,
+    opacity: hidden ? 0 : 1,
+    transparent: !!hidden
+  }))
+}
+
 const setup = () => {
   const container = document.querySelector('body')
 
-  const center = new Vector3(0, 1, 0)
+  // const center = new Vector3(0, 1, 0)
   const scene = new Scene()
   // scene.fog = new THREE.FogExp2( 0x000104, 0.000675 )
 
@@ -123,7 +158,7 @@ const setup = () => {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
   const camera = new PerspectiveCamera(70, container.clientWidth / container.clientHeight, 1, 10000)
-  camera.position.set(700, 200, 400)
+  camera.position.set(900, 400, 400)
 
   const clock = new Clock()
   const cameraControls = new CameraControls(camera, renderer.domElement)
@@ -132,7 +167,7 @@ const setup = () => {
   const hemisphereLight = new THREE.HemisphereLight(0x999999, 0x081620, 1)
 
   const directionalLight = new DirectionalLight(0xffffff, 0.3)
-  const directionalHelper = new THREE.DirectionalLightHelper(directionalLight)
+  // const directionalHelper = new THREE.DirectionalLightHelper(directionalLight)
   directionalLight.position.set(100, 100, 200)
   castShadow(directionalLight)
 
@@ -153,16 +188,16 @@ const setup = () => {
   // h^2 + a^2 = 2rh
   // a^2 = 2rh - h^2
   // a sqrt(2rh - h^2)
-
+  //
   // const radius = Math.sqrt(2 * base * (base - distance) - (base - distance) ** 2)
   // console.log({gridSize, base, distance, radius})
 
-  const planeGeometry = new CircleGeometry(base, 60)
+  const planeGeometry = new CylinderGeometry(base, base, 3, 60)
   const planeMaterial = new MeshPhongMaterial({
     color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.5
   })
   const plane = new THREE.Mesh(planeGeometry, planeMaterial)
-  plane.lookAt(center)
+  // plane.lookAt(center)
   receiveShadow(plane)
 
   // const sphereGeometry = new THREE.SphereGeometry(base, 120, 120)
@@ -174,13 +209,15 @@ const setup = () => {
     cone: new MeshPhongMaterial({color: 'green'}), log: new MeshPhongMaterial({color: 'maroon'})
   }
 
+  const trees = new Group()
+
   Array.from(Array(30), (_, idx) => {
     const height = rand(50, 200)
-    const cube = tree(materials, height / rand(2, 4), height, rand(2, 6))
-    cube.position.set(rand(-gridSize + 10, gridSize - 10), 0, rand(-gridSize + 10, gridSize - 10))
-
-    scene.add(cube)
+    const aTree = tree(materials, height / rand(2, 4), height, rand(2, 6))
+    aTree.position.set(rand(-gridSize + 10, gridSize - 10), 0, rand(-gridSize + 10, gridSize - 10))
+    trees.add(aTree)
   })
+  scene.add(trees)
 
   scene.add(ambientLight)
   scene.add(hemisphereLight)
@@ -188,10 +225,9 @@ const setup = () => {
   // scene.add(directionalHelper)
   scene.add(plane)
 
-
   const points = []
 
-  for (let i = 0; i < 1000; i++) {
+  for (let i = 0; i < 2000; i++) {
     let coords = {...getPoint(base), y: -distance}
 
     points.push(...Object.values(coords))
@@ -201,17 +237,41 @@ const setup = () => {
   flakesGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(points), 3))
 
   const flakeMaterial = new THREE.PointsMaterial({
-    // size: 4,
+    size: 4,
     // blending: THREE.AdditiveBlending,
     // depthTest: false,
-    transparent: true
+    // transparent: true,
+    // opacity: 0.5
   })
 
   const snowFlakes = new THREE.Points(flakesGeometry, flakeMaterial)
-  Object.assign(window, {snowFlakes})
+  Object.assign(window, {
+    snowFlakes,
+    trees,
+    camera
+  })
   snowFlakes.position.setY(distance)
-
   scene.add(snowFlakes)
+
+  const hint = addText(`shake or touch`, 'white', false)
+  hint.position.setY(distance * 1.5)
+  hint.geometry.computeBoundingBox()
+  const hintBox = hint.geometry.boundingBox
+  const hintWidth = hintBox.max.x - hintBox.min.x
+  hint.geometry.translate(-hintWidth / 2, 0, 0)
+  scene.add(hint)
+
+  const params = new URLSearchParams(location.search.slice(1))
+  const name = params.has('n') ? params.get('n') : ''
+  const lang = params.has('l') ? params.get('l') : 'v'
+  const text = addText(`${texts[lang]} ${name} `, 'maroon', true)
+  text.position.setY(distance * 1.5)
+  text.geometry.computeBoundingBox()
+  const textBox = text.geometry.boundingBox
+  const textWidth = textBox.max.x - textBox.min.x
+  text.geometry.translate(-textWidth / 2, 0, 0)
+  scene.add(text)
+
 
   // const rotatingLights = new Group()
   // rotatingLights.add(firstLight)
@@ -221,13 +281,16 @@ const setup = () => {
   // scene.add(secondHelper)
 
   // scene.add(rotatingLights)
-
+  // const text = scene
   const animate = () => {
     cameraControls.update(clock.getDelta())
     renderer.render(scene, camera)
     // rotatingLights.rotation.y += 0.01
-    stats.update()
-    fall(1)
+    // stats.update()
+    fall(3)
+    text.lookAt(camera.position)
+    hint.lookAt(camera.position)
+    scene.rotation.y += 0.01
 
     // cube.rotation.x += .01
     // cube.rotation.y += .01
@@ -246,12 +309,47 @@ const setup = () => {
     shake()
   })
 
+  document.body.addEventListener('touchstart', () => {
+    shake()
+  })
+
   const fall = (amount) => {
     const position = snowFlakes.geometry.getAttribute('position')
-    for (let x = 0; x < position.count; x++) {
-      const current = position.getY(x)
+    for (let i = 0; i < position.count; i++) {
+      const current = {
+        x: position.getX(i),
+        y: position.getY(i),
+        z: position.getZ(i),
+      }
+      const target = {...current, y: -300}
 
-      if (current > -200) position.setY(x, current - amount)
+      const rc = new Raycaster()
+      rc.set(
+        new Vector3(...Object.values({
+          ...current,
+          y: current.y + 200
+        })),
+        new Vector3(...Object.values(target))
+      )
+
+      const hit = [trees, text].some(object => {
+        const result = rc.intersectObject(trees, true)
+        if (result.length) {
+          if (result.some(r => r.distance < 2)) {
+            return true
+          }
+        }
+      })
+
+      if (hit) {
+        continue
+      }
+
+      if (current.y > -200) {
+        position.setY(i, current.y - amount)
+        position.setX(i, current.x - halfRand() * 3)
+        position.setZ(i, current.z - halfRand() * 3)
+      }
     }
 
     position.needsUpdate = true
@@ -260,6 +358,12 @@ const setup = () => {
   }
 
   const shuffle = () => {
+    text.material.opacity = 1
+    text.material.transparent = false
+
+    hint.material.opacity = 0
+    hint.material.transparent = true
+
     const position = snowFlakes.geometry.getAttribute('position')
     for (let x = 0; x < position.count; x++) {
       const coords = getPoint(base)
@@ -279,7 +383,7 @@ const setup = () => {
   }
 
   Object.assign(window, {
-    fall, shake, shuffle
+    fall, shake, shuffle, text
   })
 }
 

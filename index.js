@@ -154,7 +154,7 @@ const setup = () => {
 
   // const center = new Vector3(0, 1, 0)
   const scene = new Scene()
-  scene.fog = new THREE.Fog( 0x406754, 800, 1500 )
+  // scene.fog = new THREE.Fog(0x406754, 1800, 2000)
   // scene.fog = new THREE.FogExp2( 0x4be097, 0.000675 )
 
   const renderer = new WebGLRenderer()

@@ -112,6 +112,14 @@ const getPoint = (range) => {
   }
 }
 
+const decode = k => {
+  try {
+    return JSON.parse(atob(decodeURIComponent(k)))
+  } catch {
+    return null
+  }
+}
+
 const hints = {
   c: 'Agita o toca',
   v: 'Sacsa o toca',
@@ -275,10 +283,15 @@ const setup = () => {
   scene.add(snowFlakes)
 
   const params = new URLSearchParams(location.search.slice(1))
-  const n = params.has('n') ? params.get('n') : ''
-  const lang = params.has('l') ? params.get('l') : 'v'
+  let n = params.has('n') ? params.get('n') : ''
+  let l = params.has('l') ? params.get('l') : 'v'
 
-  const hint = addText(`${hints[lang]}`, 'white', false)
+  const config = params.has('k') ? decode(params.get('k')) : null
+  if (config) {
+    ({n = "", l = "v"} = config)
+  }
+
+  const hint = addText(`${hints[l]}`, 'white', false)
   hint.position.setY(distance * 1.5)
   hint.geometry.computeBoundingBox()
   const hintBox = hint.geometry.boundingBox
@@ -286,7 +299,7 @@ const setup = () => {
   hint.geometry.translate(-hintWidth / 2, 0, 0)
   scene.add(hint)
 
-  const text = addText(`${texts[lang]}`, 'maroon', true)
+  const text = addText(`${texts[l]}`, 'maroon', true)
   text.position.setY(distance * 1.8)
   text.geometry.computeBoundingBox()
   const textBox = text.geometry.boundingBox

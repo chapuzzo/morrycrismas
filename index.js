@@ -17,8 +17,8 @@ import {
   WebGLRenderer
 } from 'three'
 
-import font from 'three/examples/fonts/helvetiker_bold.typeface.json'
-// import Stats from 'three/examples/js/libs/stats.min'
+// import font from 'three/examples/fonts/helvetiker_bold.typeface.json'
+import font from './font.json'
 import Shake from 'shake.js'
 
 import CameraControls from 'camera-controls'
@@ -112,9 +112,16 @@ const getPoint = (range) => {
   }
 }
 
+const hints = {
+  c: 'Agita o toca',
+  v: 'Sacsa o toca',
+  e: 'Shake or touch',
+}
+
 const texts = {
-  c: 'Feliz Navidad',
-  v: 'Bon Nadal'
+  c: 'Feliz año 2022',
+  v: 'Bon any 2022',
+  e: 'Happy 2022',
 }
 
 const receiveShadow = element => {
@@ -147,7 +154,8 @@ const setup = () => {
 
   // const center = new Vector3(0, 1, 0)
   const scene = new Scene()
-  // scene.fog = new THREE.FogExp2( 0x000104, 0.000675 )
+  scene.fog = new THREE.Fog( 0x406754, 800, 1500 )
+  // scene.fog = new THREE.FogExp2( 0x4be097, 0.000675 )
 
   const renderer = new WebGLRenderer()
   container.append(renderer.domElement)
@@ -206,7 +214,7 @@ const setup = () => {
   // scene.add(sphere)
 
   const materials = {
-    cone: new MeshPhongMaterial({color: 'green'}), log: new MeshPhongMaterial({color: 'maroon'})
+    cone: new MeshPhongMaterial({color: '#f1bc5f'}), log: new MeshPhongMaterial({color: '#4d1e00'})
   }
 
   const trees = new Group()
@@ -226,18 +234,28 @@ const setup = () => {
   scene.add(plane)
 
   const points = []
+  const colors = []
 
-  for (let i = 0; i < 1000; i++) {
+  const amount = 1000
+  for (let i = 0; i < amount; i++) {
     let coords = {...getPoint(base), y: -distance}
 
     points.push(...Object.values(coords))
+    for (let j = 0; j < 3; j++) {
+      colors.push(Math.random())
+    }
   }
 
   const flakesGeometry = new THREE.BufferGeometry()
+
   flakesGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(points), 3))
+  flakesGeometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(colors), 3))
 
   const flakeMaterial = new THREE.PointsMaterial({
     size: 4,
+    vertexColors: true,
+    // side: THREE.DoubleSide
+    // color: 'grey',
     // blending: THREE.AdditiveBlending,
     // depthTest: false,
     // transparent: true,
@@ -248,12 +266,19 @@ const setup = () => {
   Object.assign(window, {
     snowFlakes,
     trees,
-    camera
+    camera,
+    THREE,
+    colors
   })
+
   snowFlakes.position.setY(distance)
   scene.add(snowFlakes)
 
-  const hint = addText(`shake or touch`, 'white', false)
+  const params = new URLSearchParams(location.search.slice(1))
+  const n = params.has('n') ? params.get('n') : ''
+  const lang = params.has('l') ? params.get('l') : 'v'
+
+  const hint = addText(`${hints[lang]}`, 'white', false)
   hint.position.setY(distance * 1.5)
   hint.geometry.computeBoundingBox()
   const hintBox = hint.geometry.boundingBox
@@ -261,16 +286,21 @@ const setup = () => {
   hint.geometry.translate(-hintWidth / 2, 0, 0)
   scene.add(hint)
 
-  const params = new URLSearchParams(location.search.slice(1))
-  const name = params.has('n') ? params.get('n') : ''
-  const lang = params.has('l') ? params.get('l') : 'v'
-  const text = addText(`${texts[lang]} ${name} `, 'maroon', true)
-  text.position.setY(distance * 1.5)
+  const text = addText(`${texts[lang]}`, 'maroon', true)
+  text.position.setY(distance * 1.8)
   text.geometry.computeBoundingBox()
   const textBox = text.geometry.boundingBox
   const textWidth = textBox.max.x - textBox.min.x
   text.geometry.translate(-textWidth / 2, 0, 0)
   scene.add(text)
+
+  const name = addText(n, 'maroon', true)
+  name.position.setY(distance * 1.5)
+  name.geometry.computeBoundingBox()
+  const nameBox = name.geometry.boundingBox
+  const nameWidth = nameBox.max.x - nameBox.min.x
+  name.geometry.translate(-nameWidth / 2, -50, 0)
+  scene.add(name)
 
 
   // const rotatingLights = new Group()
@@ -290,6 +320,7 @@ const setup = () => {
     fall(3)
     text.lookAt(camera.position)
     hint.lookAt(camera.position)
+    name.lookAt(camera.position)
     scene.rotation.y += 0.01
 
     // cube.rotation.x += .01
@@ -360,6 +391,9 @@ const setup = () => {
   const shuffle = () => {
     text.material.opacity = 1
     text.material.transparent = false
+
+    name.material.opacity = 1
+    name.material.transparent = false
 
     hint.material.opacity = 0
     hint.material.transparent = true

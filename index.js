@@ -357,6 +357,10 @@ const setup = () => {
     shake()
   })
 
+  document.body.addEventListener('click', () => {
+    shake()
+  })
+
   const fall = (amount) => {
     const position = snowFlakes.geometry.getAttribute('position')
     for (let i = 0; i < position.count; i++) {

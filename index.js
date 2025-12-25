@@ -253,7 +253,7 @@ const setup = () => {
   snowFlakes.position.setY(distance)
   scene.add(snowFlakes)
 
-  const hint = addText(`shake or touch`, 'white', false)
+  const hint = addText(`sacsa o toca`, 'white', false)
   hint.position.setY(distance * 1.5)
   hint.geometry.computeBoundingBox()
   const hintBox = hint.geometry.boundingBox
